@@ -1,0 +1,30 @@
+1. Define a port to a server that will first answer request regarding frequency and the binary code for alphabet received from user
+ - Create m threads that will connect to server that is gonna answer the request
+ - Same server, create m threads to communicate with m processes on server that is gonna get the code assigned to decompressed message
+2. TCP Protocol Sockets will be used
+3. Technically only need to send char array, integer values and characters through sockets
+4. Our server will be returning characters based on the symbol being passed by client
+ - Client will pass set of bits and server will return character
+ - Create multiple child threads on client side
+ - Create multiple processes on server side to handle the requests
+5. Use fireman function
+6. Clent server will send request to server asking for number of bits (main thread can do this)
+ - Response from server will be integer value representing the number of bits
+ - Then create m threads from previous pa1
+  - Each thread will get char and save that char to location that is accessible to main thread then print that info later
+  - Each child thread will create a socket, then will send binary code to server then wait for server to answer request with character then save the character to a location accessible by main thread
+ - When all child threads are done, main thread prints decompressed message
+7. Server side will have 2 types of requests
+ - No need for threads on server side
+ - Will read info about each character (decimal value of each character)
+ - Call bin function to translate it to binary then determine size(num of bits) of each char
+ - When alphabet and num of bits are ready, will receive 2 types of requests
+  - 1st request from client will be num of bits
+  - 2nd request will be m requests from client where each request will be a child thread asking for the char based on string we're receiving
+ - Make sure on infinite loop after accept, call fork() because each request will be handled by different process
+  - If type of request == 0 then return num of bits
+  - If type or request == 1 then you translate the character array were receiving into char then return char
+ - M + 1 processes
+  - Use fireman function to handle zombie processes
+
+

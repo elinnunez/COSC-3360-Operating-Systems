@@ -1,0 +1,6 @@
+bin representation: https://www.geeksforgeeks.org/binary-representation-of-a-given-number/
+
+std::string line;
+getline(std::cin, line); //store the line as a string
+char c = line[0]; //gets the first character in the line
+std::string num = line.substr(2); //gets the rest of the line into a string, so any length number. but it skips over the whitespace

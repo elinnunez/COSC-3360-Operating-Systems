@@ -1,0 +1,21 @@
+[{
+    "key": "ctrl+r",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Build and Run C++"
+},
+{
+    "key": "ctrl+shift+r",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Build and Run C++ (Multiple cpp files)"
+},
+{
+    "key": "ctrl+b",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Build C++"
+},
+{
+    "key": "ctrl+shift+b",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Build C++ (Multiple cpp files)"
+}
+]

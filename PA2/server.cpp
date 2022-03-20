@@ -1,3 +1,7 @@
+// socket creation code from rincon blackboard template
+// fireman function code from rincon template and https://www.tutorialspoint.com/unix_sockets/socket_server_example.htm
+// binding issues code fix from: https://stackoverflow.com/questions/24194961/how-do-i-use-setsockoptso-reuseaddr
+
 #include <iostream>
 #include <stdlib.h>
 #include <sys/types.h>

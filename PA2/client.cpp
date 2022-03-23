@@ -9,12 +9,18 @@
 #include <string.h>
 #include <unistd.h>
 
+// struct test { // testing
+//     char binn[256];
+//     int idx;
+// };
+
 struct D
 {
     std::string encoded;
     char decoded;
     int *portno;
     char *servername;
+    // int index; // testing
 };
 
 void *Send(void *x_ptr)
@@ -68,6 +74,13 @@ void *Send(void *x_ptr)
 
     // std::cout << "Writing: " << charr << std::endl;
 
+    // struct test tester; // testing
+
+    // strcpy(tester.binn, temp_ptr->encoded.c_str()); // testing
+    // tester.idx = temp_ptr->index; // testing
+
+    // int n = write(newsockfd, &tester, sizeof(struct test)); // testing
+
     int n = write(newsockfd, &charr, sizeof(charr));
 
     if (n < 0)
@@ -88,6 +101,8 @@ void *Send(void *x_ptr)
     // std::cout << "Encoded Char: " << temp_ptr->encoded << "\n";
     // std::cout << "Decoded Char: " << temp_ptr->decoded << "\n";
     // std::cout << "---------------------\n";
+
+    // std::cout << "Thread: " << temp_ptr->index << "\n"; // testing
 
     close(newsockfd);
 
@@ -190,6 +205,7 @@ int main(int argc, char *argv[]) // argc == argument count, argv is the array of
         dobj.encoded = newstr;
         dobj.portno = &portnumber;
         dobj.servername = argv[1];
+        // dobj.index = i; // testing
 
         charArr[i] = dobj;
 

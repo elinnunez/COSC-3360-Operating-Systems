@@ -16,6 +16,11 @@
 #include <regex>
 #include <unordered_map>
 
+// struct test { // testing
+//     char bin[256];
+//     int threadidx;
+// };
+
 struct obj
 {
     char cval;
@@ -195,7 +200,11 @@ int main(int argc, char *argv[])
             // std::cout << "A child process started" << std::endl;
             close(sockfd);
 
+            // struct test tester; // testing
+
             int num = read(newsockfd, buffer, sizeof(buffer));
+
+            // int num = read(newsockfd, &tester, sizeof(struct test)); // testing
 
             if (num < 0)
             {
@@ -204,9 +213,13 @@ int main(int argc, char *argv[])
                 exit(1);
             }
 
+            // std::cout << "Str: " << tester.bin << " from thread " << tester.threadidx << "\n"; // testing
+
             // std::cout << "Here is the bin str: " << buffer << "\n";
 
             num = write(newsockfd, &hashmap[buffer], sizeof(char));
+
+            // num = write(newsockfd, &hashmap[tester.bin], sizeof(char)); // testing
 
             if (num < 0)
             {

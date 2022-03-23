@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     }
 
     // Listen on the socket with max_size+1 max connections requests queued
-    listen(sockfd, MAX_SIZE + 1);
+    listen(sockfd, MAX_SIZE+1);
 
     cli_len = sizeof(cli_addr);
 
@@ -171,20 +171,18 @@ int main(int argc, char *argv[])
 
     close(newsockfd);
 
-    int newsock;
-
     signal(SIGCHLD, fireman);
     while (true)
     {
-        newsock = accept(sockfd, (struct sockaddr *)&cli_addr, (socklen_t *)&cli_len);
+        newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, (socklen_t *)&cli_len);
 
-        if (newsock < 0)
+        if (newsockfd < 0)
         {
             perror("New socket error on accept");
             exit(1);
         }
 
-        int pid = fork();
+        pid_t pid = fork();
 
         if(pid < 0) {
             perror("Error on fork");
@@ -200,35 +198,37 @@ int main(int argc, char *argv[])
 
             memset(buffer, 0, 256);
 
-            int num = read(newsock, buffer, sizeof(buffer));
+            int num = read(newsockfd, buffer, sizeof(buffer));
 
             if (num < 0)
             {
                 perror("ERROR reading from socket in fork");
-                close(newsock);
+                close(newsockfd);
                 exit(1);
             }
 
             // std::cout << "Here is the bin str: " << buffer << "\n";
 
-            n = write(newsock, &hashmap[buffer], sizeof(char));
+            n = write(newsockfd, &hashmap[buffer], sizeof(char));
 
             if (n < 0)
             {
                 perror("ERROR writing to socket from fork");
-                close(newsock);
+                close(newsockfd);
                 exit(1);
             }
+
+            close(newsockfd);
             _exit(0);
         }
         else
         {
-            close(newsock);
+            close(newsockfd);
         }
         std::cin.get();
     }
 
-    close(newsock);
+    close(newsockfd);
 
     close(sockfd);
 

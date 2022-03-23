@@ -67,7 +67,7 @@ void readInput(std::vector<obj> &objL, int &MAX_SIZE)
 void fireman(int)
 {
     while (waitpid(-1, NULL, WNOHANG) > 0);
-        // std::cout << "A child process ended" << std::endl;
+    // std::cout << "A child process ended" << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -88,11 +88,9 @@ int main(int argc, char *argv[])
 
     int sockfd, newsockfd, portnumber, cli_len;
 
-    char binmsg[256];
+    char buffer[256];
 
     struct sockaddr_in server_addr, cli_addr;
-
-    int n;
 
     if (argc < 2)
     {
@@ -109,10 +107,10 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-
-    //binding issue fix from https://stackoverflow.com/questions/24194961/how-do-i-use-setsockoptso-reuseaddr
+    // binding issue fix from https://stackoverflow.com/questions/24194961/how-do-i-use-setsockoptso-reuseaddr
     int reuse = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0) {
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const char *)&reuse, sizeof(reuse)) < 0)
+    {
         perror("setsockopt(SO_REUSEADDR) failed");
     }
 
@@ -136,7 +134,7 @@ int main(int argc, char *argv[])
     }
 
     // Listen on the socket with max_size+1 max connections requests queued
-    listen(sockfd, MAX_SIZE+1);
+    listen(sockfd, MAX_SIZE + 1);
 
     cli_len = sizeof(cli_addr);
 
@@ -148,9 +146,9 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    memset(binmsg, 0, 256);
+    memset(buffer, 0, 256);
 
-    n = read(newsockfd, binmsg, sizeof(binmsg));
+    int n = read(newsockfd, buffer, sizeof(buffer));
 
     if (n < 0)
     {
@@ -158,16 +156,18 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // std::cout << "Binary message from client: " << binmsg << "\n";
+    // std::cout << "Binary message from client: " << buffer << "\n";
 
     n = write(newsockfd, &MAX_SIZE, sizeof(int));
 
     if (n < 0)
     {
         perror("ERROR writing to socket");
-       
+
         exit(1);
     }
+
+    memset(buffer, 0, 256);
 
     close(newsockfd);
 
@@ -184,7 +184,8 @@ int main(int argc, char *argv[])
 
         pid_t pid = fork();
 
-        if(pid < 0) {
+        if (pid < 0)
+        {
             perror("Error on fork");
             exit(1);
         }
@@ -193,10 +194,6 @@ int main(int argc, char *argv[])
         {
             // std::cout << "A child process started" << std::endl;
             close(sockfd);
-
-            char buffer[256];
-
-            memset(buffer, 0, 256);
 
             int num = read(newsockfd, buffer, sizeof(buffer));
 
@@ -209,9 +206,9 @@ int main(int argc, char *argv[])
 
             // std::cout << "Here is the bin str: " << buffer << "\n";
 
-            n = write(newsockfd, &hashmap[buffer], sizeof(char));
+            num = write(newsockfd, &hashmap[buffer], sizeof(char));
 
-            if (n < 0)
+            if (num < 0)
             {
                 perror("ERROR writing to socket from fork");
                 close(newsockfd);

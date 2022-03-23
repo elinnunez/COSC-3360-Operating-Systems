@@ -1,3 +1,5 @@
+// socket creation code from rincon blackboard template
+
 #include <iostream>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -6,18 +8,16 @@
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
-#include <vector>
 
 struct D
 {
     std::string encoded;
     char decoded;
-    int portno;
-    char* servername;
-
+    int *portno;
+    char *servername;
 };
 
-void *Solve(void *x_ptr)
+void *Send(void *x_ptr)
 {
     struct D *temp_ptr = (struct D *)x_ptr;
 
@@ -26,9 +26,9 @@ void *Solve(void *x_ptr)
     struct sockaddr_in server_address;
     struct hostent *server;
 
-    portnumber = temp_ptr->portno;
+    portnumber = *temp_ptr->portno;
 
-    newsockfd = socket(AF_INET, SOCK_STREAM, 0); // 0 is default protocol
+    newsockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (newsockfd < 0)
     {
@@ -36,7 +36,7 @@ void *Solve(void *x_ptr)
         exit(0);
     }
 
-    server = gethostbyname(temp_ptr->servername); // replace with getaddrinfo()?
+    server = gethostbyname(temp_ptr->servername);
 
     if (server == nullptr)
     {
@@ -44,7 +44,7 @@ void *Solve(void *x_ptr)
         exit(0);
     }
 
-    memset((char *)&server_address, 0, sizeof(server_address)); // memset(void *s, int c, size_t n): Fills te first n bytes of the memory area pointed to by s with the constant byte c
+    memset((char *)&server_address, 0, sizeof(server_address));
 
     server_address.sin_family = AF_INET;
 
@@ -60,8 +60,6 @@ void *Solve(void *x_ptr)
         exit(0);
     }
 
-    int n;
-
     char charr[256];
 
     memset(charr, 0, 256);
@@ -70,14 +68,14 @@ void *Solve(void *x_ptr)
 
     // std::cout << "Writing: " << charr << std::endl;
 
-    n = write(newsockfd, &charr, sizeof(charr));
+    int n = write(newsockfd, &charr, sizeof(charr));
 
     if (n < 0)
     {
         std::cout << "Error writing to socket from thread.\n";
         exit(0);
     }
-    
+
     n = read(newsockfd, &temp_ptr->decoded, sizeof(char));
 
     if (n < 0)
@@ -94,7 +92,6 @@ void *Solve(void *x_ptr)
     close(newsockfd);
 
     return nullptr;
-
 }
 
 int main(int argc, char *argv[]) // argc == argument count, argv is the array of the arguments input
@@ -180,40 +177,37 @@ int main(int argc, char *argv[]) // argc == argument count, argv is the array of
 
     pthread_t mth[MTHREADS];
 
-    std::vector<struct D> charArr(MTHREADS);
+    struct D charArr[MTHREADS];
 
     for (int i = 0; i < MTHREADS; i++)
     {
-       
+
         std::string newstr = stringval.substr(0, numbits);
 
         stringval = stringval.substr(numbits);
 
         struct D dobj;
         dobj.encoded = newstr;
-        dobj.portno = portnumber;
+        dobj.portno = &portnumber;
         dobj.servername = argv[1];
 
         charArr[i] = dobj;
 
-        if (pthread_create(&mth[i], nullptr, Solve, &charArr[i]))
+        if (pthread_create(&mth[i], nullptr, Send, &charArr[i]))
         {
             std::cout << "Error creating thread" << std::endl;
             return 1;
         }
-
-    }
-
-    for (int i = 0; i < MTHREADS; i++)
-    {
-        pthread_join(mth[i], nullptr);
     }
 
     std::string decompressed = "";
 
-    for(auto &it: charArr) {
-        decompressed+= it.decoded;
+    for (int i = 0; i < MTHREADS; i++)
+    {
+        pthread_join(mth[i], nullptr);
+        decompressed += charArr[i].decoded;
     }
+
     std::cout << "Decompressed message: " << decompressed << "\n";
 
     return 0;

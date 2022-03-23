@@ -1,6 +1,7 @@
 // socket creation code from rincon blackboard template
 // fireman function code from rincon template and https://www.tutorialspoint.com/unix_sockets/socket_server_example.htm
 // binding issues code fix from: https://stackoverflow.com/questions/24194961/how-do-i-use-setsockoptso-reuseaddr
+// references used: https://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
 
 #include <iostream>
 #include <stdlib.h>
@@ -67,6 +68,43 @@ void readInput(std::vector<obj> &objL, int &MAX_SIZE)
     }
 
     MAX_SIZE = std::ceil(log2(maxi + 1));
+}
+
+void doWork(int sfd, std::unordered_map<std::string, char> &ht)
+{
+    char buffer[256];
+
+    memset(buffer, 0, 256);
+
+    // struct test tester; // testing
+
+    int num = read(sfd, buffer, sizeof(buffer));
+
+    // int num = read(sfd, &tester, sizeof(struct test)); // testing
+
+    if (num < 0)
+    {
+        perror("ERROR reading from socket in fork");
+        close(sfd);
+        exit(1);
+    }
+
+    // std::cout << "Str: " << tester.bin << " from thread " << tester.threadidx << "\n"; // testing
+
+    // std::cout << "Here is the bin str: " << buffer << "\n";
+
+    num = write(sfd, &ht[buffer], sizeof(char));
+
+    // num = write(newsockfd, &hashmap[tester.bin], sizeof(char)); // testing
+
+    if (num < 0)
+    {
+        perror("ERROR writing to socket from fork");
+        close(sfd);
+        exit(1);
+    }
+
+    close(sfd);
 }
 
 void fireman(int)
@@ -200,35 +238,8 @@ int main(int argc, char *argv[])
             // std::cout << "A child process started" << std::endl;
             close(sockfd);
 
-            // struct test tester; // testing
+            doWork(newsockfd, hashmap);
 
-            int num = read(newsockfd, buffer, sizeof(buffer));
-
-            // int num = read(newsockfd, &tester, sizeof(struct test)); // testing
-
-            if (num < 0)
-            {
-                perror("ERROR reading from socket in fork");
-                close(newsockfd);
-                exit(1);
-            }
-
-            // std::cout << "Str: " << tester.bin << " from thread " << tester.threadidx << "\n"; // testing
-
-            // std::cout << "Here is the bin str: " << buffer << "\n";
-
-            num = write(newsockfd, &hashmap[buffer], sizeof(char));
-
-            // num = write(newsockfd, &hashmap[tester.bin], sizeof(char)); // testing
-
-            if (num < 0)
-            {
-                perror("ERROR writing to socket from fork");
-                close(newsockfd);
-                exit(1);
-            }
-
-            close(newsockfd);
             _exit(0);
         }
         else

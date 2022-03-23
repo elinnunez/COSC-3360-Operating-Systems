@@ -105,6 +105,8 @@ void doWork(int sfd, std::unordered_map<std::string, char> &ht)
     }
 
     close(sfd);
+
+    return;
 }
 
 void fireman(int)

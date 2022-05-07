@@ -8,6 +8,12 @@
 #include <sys/wait.h>
 #include <pthread.h>
 
+struct og
+{
+    char cval;
+    int dec;
+};
+
 struct obj
 {
     std::map<std::string, char> ht;
@@ -15,17 +21,18 @@ struct obj
     int dec;
     std::string code;
     int frequency = 0;
-    std::string mess;
-    int max_num;
+    std::string *mess;
+    int *max_num;
     int index;
     pthread_mutex_t *bsem;
     pthread_cond_t *wait;
     int *turn;
 };
 
-struct arg {
+struct arg
+{
     std::map<std::string, char> ht;
-    std::string encoded;
+    std::string *encoded;
     int index;
     pthread_mutex_t *msem;
     pthread_cond_t *wait;
@@ -33,7 +40,7 @@ struct arg {
     std::string cur;
 };
 
-void readInput(int &numthread, std::vector<obj> &objL, std::string &msg, int &MAX_NUM)
+void readInput(int &numthread, std::vector<og> &objL, std::string &msg, int &MAX_NUM)
 {
     std::string count;
     getline(std::cin, count);
@@ -46,14 +53,12 @@ void readInput(int &numthread, std::vector<obj> &objL, std::string &msg, int &MA
 
     for (int i = 0; i < stoi(count); i++)
     {
-   
         getline(std::cin, line);
-
 
         char c = line[0];
         int curnum = stoi(line.substr(2));
 
-        obj object;
+        struct og object;
 
         object.cval = c;
         object.dec = curnum;
@@ -62,7 +67,6 @@ void readInput(int &numthread, std::vector<obj> &objL, std::string &msg, int &MA
 
         maxi = std::max(maxi, curnum);
     }
-
 
     MAX_NUM = std::ceil(log2(maxi + 1));
 
@@ -101,22 +105,42 @@ void *Solve(void *x_ptr)
 {
     struct obj *temp_ptr = (struct obj *)x_ptr;
 
-    std::string message = temp_ptr->mess;
-
     char charval = temp_ptr->cval;
-
-    std::string curcode = dectobin(temp_ptr->dec, temp_ptr->max_num);
-
-    int curfreq = countFreq(curcode, temp_ptr->max_num, message);
     
+    int tp_dec = temp_ptr->dec;
+    
+    int tp_maxnum = *temp_ptr->max_num;
+    
+    std::string tp_mess = *temp_ptr->mess;
+
+    int tp_curidx = temp_ptr->index;
+
+    // std::cout << "Thread " << temp_ptr->index << " copying\n";
+
     pthread_mutex_unlock(temp_ptr->bsem);
 
-    std::cout << "Character: " << charval << ", Code: " << curcode  << ", Frequency: " << curfreq << std::endl;
+    // std::cout << "Thread " << temp_ptr->index << " work\n";
+    
+    std::string curcode = dectobin(tp_dec, tp_maxnum);
+
+    int curfreq = countFreq(dectobin(tp_dec, tp_maxnum), tp_maxnum, tp_mess);
 
     pthread_mutex_lock(temp_ptr->bsem);
 
-    *(temp_ptr->turn)++;
     
+    while(*temp_ptr->turn != tp_curidx)
+    {
+        pthread_cond_wait(temp_ptr->wait, temp_ptr->bsem);
+    }
+
+    pthread_mutex_unlock(temp_ptr->bsem);
+
+    std::cout << "Character: " << charval << ", Code: " << curcode << ", Frequency: " << curfreq << std::endl;
+
+    pthread_mutex_lock(temp_ptr->bsem);
+
+    *(temp_ptr->turn) = *(temp_ptr->turn) + 1;
+
     pthread_cond_broadcast(temp_ptr->wait);
     pthread_mutex_unlock(temp_ptr->bsem);
 
@@ -127,16 +151,27 @@ void *DecSolve(void *y_ptr)
 {
     struct arg *temp_ptr = (struct arg *)y_ptr;
 
-    std::string msg = temp_ptr->encoded;
+    char tp_cval = temp_ptr->ht[*temp_ptr->encoded];
 
-    temp_ptr->cur += temp_ptr->ht[msg];
+    int tp_curidx = temp_ptr->index;
 
     pthread_mutex_unlock(temp_ptr->msem);
 
     pthread_mutex_lock(temp_ptr->msem);
 
-    *(temp_ptr->turn)++;
-    
+    while(*temp_ptr->turn != tp_curidx)
+    {
+        pthread_cond_wait(temp_ptr->wait, temp_ptr->msem);
+    }
+
+    temp_ptr->cur += tp_cval;
+
+    pthread_mutex_unlock(temp_ptr->msem);
+
+    pthread_mutex_lock(temp_ptr->msem);
+
+    *(temp_ptr->turn) = *(temp_ptr->turn) + 1;
+
     pthread_cond_broadcast(temp_ptr->wait);
     pthread_mutex_unlock(temp_ptr->msem);
 
@@ -149,7 +184,7 @@ int main()
     static pthread_cond_t waitTurn;
     int turn = 0;
 
-    std::vector<obj> objlist;
+    std::vector<og> objlist;
     std::string message;
     std::map<std::string, char> hashmap;
     static int MAX_NUM;
@@ -161,11 +196,12 @@ int main()
     pthread_t th[NTHREADS];
 
     struct obj arg;
-    arg.mess = message;
-    arg.max_num = MAX_NUM;
-    arg.bsem = &bsem; //binary semaphore
-    arg.wait = &waitTurn; //cond var
+    arg.mess = &message;
+    arg.max_num = &MAX_NUM;
+    arg.bsem = &bsem;     // binary semaphore
+    arg.wait = &waitTurn; // cond var
     arg.ht = hashmap;
+    arg.turn = &turn;
 
     std::cout << "Alphabet:\n";
 
@@ -177,13 +213,11 @@ int main()
 
         pthread_mutex_lock(&bsem);
 
-        if(i < turn) {
-            pthread_cond_wait(&waitTurn, &bsem);
-        }
-
         arg.dec = objlist[i].dec;
         arg.cval = objlist[i].cval;
         arg.index = i;
+
+        // std::cout << "Thread " << arg.index << " modify\n";
 
         if (pthread_create(&th[i], nullptr, Solve, &arg))
         {
@@ -197,14 +231,6 @@ int main()
         pthread_join(th[i], nullptr);
     }
 
-    // for (auto const& x : hashmap)
-    // {
-    //     std::cout << x.first  // string (key)
-    //             << ':' 
-    //             << x.second // string's value 
-    //             << std::endl;
-    // }
-
     int MTHREADS = message.size() / MAX_NUM;
 
     pthread_t mth[MTHREADS];
@@ -217,20 +243,17 @@ int main()
     argd.ht = hashmap;
     argd.msem = &msem;
     argd.wait = &cond;
+    argd.turn = &turn;
 
     for (int i = 0; i < MTHREADS; i++)
     {
         pthread_mutex_lock(&msem);
 
-        if(i < turn) {
-            pthread_cond_wait(&cond, &msem);
-        }
-
         std::string newstr = message.substr(0, MAX_NUM);
 
         message = message.substr(MAX_NUM);
 
-        argd.encoded = newstr;
+        argd.encoded = &newstr;
         argd.index = i;
 
         if (pthread_create(&mth[i], nullptr, DecSolve, &argd))
